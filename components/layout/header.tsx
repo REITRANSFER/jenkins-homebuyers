@@ -1,5 +1,6 @@
 import { Phone } from "lucide-react"
 import Image from "next/image"
+import { telHref } from "@/lib/utils"
 
 interface HeaderProps {
   companyName: string
@@ -37,7 +38,7 @@ export function Header({ companyName, phoneDisplay, phoneHref, logoUrl, headerBg
 
         {/* Phone CTA */}
         <a
-          href={`tel:${phoneHref}`}
+          href={telHref(phoneHref)}
           className="flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           style={{ backgroundColor: "var(--accent)" }}
         >

@@ -1,3 +1,5 @@
+import { telHref } from "@/lib/utils"
+
 interface FooterProps {
   companyName: string
   phoneDisplay: string
@@ -39,7 +41,7 @@ export function Footer({
             </a>
             <span className="text-gray-300">|</span>
             <a
-              href={`tel:${phoneHref}`}
+              href={telHref(phoneHref)}
               className="transition-colors hover:text-gray-900"
             >
               {phoneDisplay}
