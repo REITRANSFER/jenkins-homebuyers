@@ -5,6 +5,7 @@ import { Home, ArrowRight, ArrowLeft, Check, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { captureTrackingData, getIPAddress } from "@/lib/tracking"
 import { Input } from "@/components/ui/input"
+import { telHref } from "@/lib/utils"
 import { AddressAutocomplete, type AddressDetails, type ServiceArea } from "./address-autocomplete"
 
 interface SurveyData {
@@ -349,7 +350,7 @@ export function SurveyCard({ phoneDisplay = "(800) 000-0000", phoneHref = "80000
             <p className="mt-4 text-sm text-gray-500">{msg.detail}</p>
           </div>
           <a
-            href={`tel:${phoneHref}`}
+            href={telHref(phoneHref)}
             className="mt-2 inline-flex items-center gap-2 rounded-xl bg-[var(--accent)] px-6 py-3 text-white hover:opacity-90 transition-opacity"
           >
             Call Us: {phoneDisplay}
