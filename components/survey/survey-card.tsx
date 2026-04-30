@@ -69,6 +69,45 @@ const REASON_OPTIONS = [
   { id: "other", label: "Other" },
 ]
 
+// ─── Lead scoring (browser-side, no n8n changes) ───────────────────────
+const SCORE_TIMELINE: Record<string, number> = {
+  'asap': 3, '2-weeks': 2, '30-days': 1, '60-days': 0, 'flexible': 0,
+}
+const SCORE_REASON: Record<string, number> = {
+  'foreclosure': 3, 'behind-payments': 3,
+  'inherited': 2, 'repairs': 2,
+  'other': 1,
+  'relocation': 0, 'divorce': 0, 'downsizing': 0,
+}
+const SCORE_CONDITION: Record<string, number> = {
+  'poor': 1, 'distressed': 1,
+  'fair': 0, 'good': 0, 'excellent': 0,
+}
+function calculateLeadScore(d: SurveyData): number {
+  const t = SCORE_TIMELINE[d.timeline] ?? 0
+  const r = SCORE_REASON[d.reason] ?? 0
+  const c = SCORE_CONDITION[d.condition] ?? 0
+  return Math.min(10, t + r + c)
+}
+function isQualifiedForMeta(d: SurveyData): boolean {
+  const okType = d.propertyType === 'single-family' || d.propertyType === 'multi-family'
+  const okListed = d.listedOnMarket === 'not-listed'
+  const okOwner = d.isLegalOwner !== 'no'
+  return okType && okListed && okOwner
+}
+function leadQuality(score: number): 'premium' | 'standard' | 'low' {
+  if (score >= 6) return 'premium'
+  if (score >= 2) return 'standard'
+  return 'low'
+}
+function disqualifyReasonFor(d: SurveyData): string {
+  if (d.propertyType !== 'single-family' && d.propertyType !== 'multi-family') return 'property_type'
+  if (d.listedOnMarket !== 'not-listed') return 'listed'
+  if (d.isLegalOwner === 'no') return 'not_owner'
+  return 'unknown'
+}
+// ──────────────────────────────────────────────────────────────────────
+
 // Valid US area codes
 // Disposable email domains
 const DISPOSABLE_DOMAINS = new Set(["mailinator.com","guerrillamail.com","tempmail.com","throwaway.email","yopmail.com","sharklasers.com","guerrillamail.info","grr.la","guerrillamail.biz","guerrillamail.de","guerrillamail.net","guerrillamail.org","spam4.me","trashmail.com","trashmail.me","trashmail.net","mytemp.email","mohmal.com","tempail.com","dispostable.com","maildrop.cc","10minutemail.com","temp-mail.org","fakeinbox.com","mailnesia.com","getnada.com","emailondeck.com","33mail.com","harakirimail.com","jetable.org","meltmail.com","mailcatch.com","tempinbox.com","spamgourmet.com","mailexpire.com","incognitomail.org","getairmail.com","mailnull.com","safeemail.xyz","tempmailo.com","burnermail.io"])
@@ -216,6 +255,11 @@ export function SurveyCard({ phoneDisplay = "(800) 000-0000", phoneHref = "80000
 
       try {
         const nameParts = surveyData.name.trim().split(/\s+/)
+        const score = calculateLeadScore(surveyData)
+        const quality = leadQuality(score)
+        const qualified = isQualifiedForMeta(surveyData)
+        const dqReason = qualified ? null : disqualifyReasonFor(surveyData)
+        const eventId = `lead-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
         const payload = {
           firstName: nameParts[0] || '',
           lastName: nameParts.slice(1).join(' ') || '',
@@ -230,7 +274,30 @@ export function SurveyCard({ phoneDisplay = "(800) 000-0000", phoneHref = "80000
           reason: surveyData.reason,
           source: 'Survey Form',
           submittedAt: new Date().toISOString(),
+          qualified,
+          lead_score: score,
+          lead_quality: quality,
+          disqualify_reason: dqReason,
+          meta_event_id: eventId,
+          meta_event_name: qualified ? 'Lead' : 'LeadLowIntent',
+          meta_value: qualified ? score * 25 : 0,
           ...trackingRef.current,
+        }
+                // Fire weighted Meta Pixel event (browser-side; CAPI is a separate later phase)
+        if (typeof window !== 'undefined' && (window as { fbq?: (...args: unknown[]) => void }).fbq) {
+          const fbq = (window as { fbq: (...args: unknown[]) => void }).fbq
+          if (qualified) {
+            fbq('track', 'Lead', {
+              value: score * 25, currency: 'USD',
+              content_name: 'Jenkins Homebuyers Survey', content_category: 'real_estate',
+              lead_score: score, lead_quality: quality,
+            }, { eventID: eventId })
+          } else {
+            fbq('trackCustom', 'LeadLowIntent', {
+              content_name: 'Jenkins Homebuyers Survey', content_category: 'real_estate',
+              disqualify_reason: dqReason, lead_score: score,
+            }, { eventID: eventId })
+          }
         }
         await fetch('/api/submit', {
           method: 'POST',
