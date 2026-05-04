@@ -16,7 +16,8 @@ interface SurveyData {
   timeline: string
   condition: string
   reason: string
-  name: string
+  firstName: string
+  lastName: string
   email: string
   phone: string
 }
@@ -157,7 +158,8 @@ export function SurveyCard({ phoneDisplay = "(800) 000-0000", phoneHref = "80000
     timeline: "",
     condition: "",
     reason: "",
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
   })
@@ -187,8 +189,10 @@ export function SurveyCard({ phoneDisplay = "(800) 000-0000", phoneHref = "80000
     if (step === 8) {
       const errors: {[key: string]: string} = {}
 
-      const nameCheck = validateName(surveyData.name)
-      if (!nameCheck.valid) errors.name = nameCheck.msg
+      const firstNameCheck = validateName(surveyData.firstName)
+      if (!firstNameCheck.valid) errors.firstName = firstNameCheck.msg.replace(/full name/g, "first name")
+      const lastNameCheck = validateName(surveyData.lastName)
+      if (!lastNameCheck.valid) errors.lastName = lastNameCheck.msg.replace(/full name/g, "last name")
 
       const emailCheck = validateEmail(surveyData.email)
       if (!emailCheck.valid) errors.email = emailCheck.msg
@@ -215,11 +219,11 @@ export function SurveyCard({ phoneDisplay = "(800) 000-0000", phoneHref = "80000
       setIsSubmitting(true)
 
       try {
-        const nameParts = surveyData.name.trim().split(/\s+/)
+        const fullName = `${surveyData.firstName.trim()} ${surveyData.lastName.trim()}`.trim()
         const payload = {
-          firstName: nameParts[0] || '',
-          lastName: nameParts.slice(1).join(' ') || '',
-          name: surveyData.name,
+          firstName: surveyData.firstName.trim(),
+          lastName: surveyData.lastName.trim(),
+          name: fullName,
           email: surveyData.email,
           phone: surveyData.phone,
           address: surveyData.address,
@@ -261,7 +265,8 @@ export function SurveyCard({ phoneDisplay = "(800) 000-0000", phoneHref = "80000
       case 6: return surveyData.condition !== ""
       case 7: return surveyData.reason !== ""
       case 8: return (
-        surveyData.name.trim().length > 0 &&
+        surveyData.firstName.trim().length > 0 &&
+        surveyData.lastName.trim().length > 0 &&
         surveyData.email.trim().length > 0 &&
         surveyData.phone.trim().length > 0
       )
@@ -368,7 +373,7 @@ export function SurveyCard({ phoneDisplay = "(800) 000-0000", phoneHref = "80000
             <Check className="h-7 w-7 text-[#22c55e]" />
           </div>
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900">Thank You, {surveyData.name}!</h2>
+            <h2 className="text-2xl font-semibold text-gray-900">Thank You, {surveyData.firstName}!</h2>
             <p className="mt-2 text-gray-600">We've received your information and will be in touch shortly.</p>
             <p className="mt-4 text-sm text-gray-500">One of our team members will call you within 24 hours.</p>
           </div>
@@ -495,17 +500,33 @@ export function SurveyCard({ phoneDisplay = "(800) 000-0000", phoneHref = "80000
               <p className="mt-1 text-sm text-gray-500">We'll use this to send you your cash offer.</p>
             </div>
             <div className="flex flex-col gap-3">
-              <div>
-                <Input
-                  placeholder="Your full name"
-                  value={surveyData.name}
-                  onChange={(e) => {
-                    setSurveyData({ ...surveyData, name: e.target.value })
-                    setValidationErrors({ ...validationErrors, name: "" })
-                  }}
-                  className={`h-12 rounded-xl border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:border-[var(--accent)] focus:ring-[var(--accent)]/20 ${validationErrors.name ? "border-red-500" : ""}`}
-                />
-                {validationErrors.name && <p className="mt-1 text-xs text-red-500">{validationErrors.name}</p>}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Input
+                    placeholder="First name"
+                    autoComplete="given-name"
+                    value={surveyData.firstName}
+                    onChange={(e) => {
+                      setSurveyData({ ...surveyData, firstName: e.target.value })
+                      setValidationErrors({ ...validationErrors, firstName: "" })
+                    }}
+                    className={`h-12 rounded-xl border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:border-[var(--accent)] focus:ring-[var(--accent)]/20 ${validationErrors.firstName ? "border-red-500" : ""}`}
+                  />
+                  {validationErrors.firstName && <p className="mt-1 text-xs text-red-500">{validationErrors.firstName}</p>}
+                </div>
+                <div>
+                  <Input
+                    placeholder="Last name"
+                    autoComplete="family-name"
+                    value={surveyData.lastName}
+                    onChange={(e) => {
+                      setSurveyData({ ...surveyData, lastName: e.target.value })
+                      setValidationErrors({ ...validationErrors, lastName: "" })
+                    }}
+                    className={`h-12 rounded-xl border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 focus:border-[var(--accent)] focus:ring-[var(--accent)]/20 ${validationErrors.lastName ? "border-red-500" : ""}`}
+                  />
+                  {validationErrors.lastName && <p className="mt-1 text-xs text-red-500">{validationErrors.lastName}</p>}
+                </div>
               </div>
               <div>
                 <Input
