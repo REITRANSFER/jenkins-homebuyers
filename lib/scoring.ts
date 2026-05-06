@@ -32,7 +32,6 @@ export const ASKING_PRICE_OPTIONS = [
   { id: '250k-350k', label: '$250,000 – $350,000' },
   { id: '350k-500k', label: '$350,000 – $500,000' },
   { id: 'over-500k', label: 'Over $500,000' },
-  { id: 'flexible', label: "I'm flexible / not sure" },
 ]
 
 // --- Score weights ---
@@ -50,7 +49,6 @@ const SCORE_ASKING_PRICE: Record<string, number> = {
   '250k-350k': 2,
   '350k-500k': 1,
   'over-500k': 0,
-  'flexible': 1,
 }
 
 const SCORE_CONDITION: Record<string, number> = {
