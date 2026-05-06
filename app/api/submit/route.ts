@@ -39,8 +39,9 @@ export async function POST(request: Request) {
     }
 
     const data = await request.json()
+    const stage = data.lead_stage || 'complete' // 'early' | 'complete'
 
-    // Server-side validation
+    // Server-side validation (applies to BOTH stages)
     const phone = (data.phone || "").replace(/\D/g, "").replace(/^1/, "")
     if (phone.length !== 10) {
       return NextResponse.json({ success: false, error: "Invalid phone" }, { status: 400 })
@@ -59,10 +60,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Address required" }, { status: 400 })
     }
 
-    // Add server IP to payload
-    const payload = { ...data, server_ip: ip }
+    const payload = { ...data, server_ip: ip, lead_stage: stage }
 
-    const webhookUrl = process.env.WEBHOOK_URL
+    // Webhook routing: same URL for both stages, n8n branches on `lead_stage`.
+    // Optional split via WEBHOOK_URL_EARLY / WEBHOOK_URL_COMPLETE.
+    const earlyUrl = process.env.WEBHOOK_URL_EARLY || process.env.WEBHOOK_URL
+    const completeUrl = process.env.WEBHOOK_URL_COMPLETE || process.env.WEBHOOK_URL
+    const webhookUrl = stage === 'early' ? earlyUrl : completeUrl
+
     if (webhookUrl) {
       await fetch(webhookUrl, {
         method: "POST",
@@ -71,7 +76,7 @@ export async function POST(request: Request) {
       })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, stage })
   } catch {
     return NextResponse.json({ success: false }, { status: 500 })
   }
