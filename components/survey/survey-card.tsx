@@ -217,14 +217,23 @@ export function SurveyCard({
 
   // Address selection auto-advances to owner question
   const handleAddressSelect = (address: string, details: AddressDetails) => {
+    const state = details.state || ""
     setStage1Data({
       ...stage1Data,
       address,
-      state: details.state || "",
+      state,
       county: details.county || "",
       city: details.city || "",
     })
     setAddressVerified(true)
+
+    // DQ any property outside Tennessee — state holds the short_name ("TN")
+    if (state !== "TN" && state.toLowerCase() !== "tennessee") {
+      setAddressOutOfArea(true)
+      setTimeout(() => { setDisqualifyReason("outOfArea"); setIsDisqualified(true) }, 300)
+      return
+    }
+
     setAddressOutOfArea(false)
     setTimeout(() => setStage1Step(2), 350)
   }
@@ -495,8 +504,8 @@ export function SurveyCard({
       },
       outOfArea: {
         title: "Outside Our Service Area",
-        message: "We don't currently buy properties in that area.",
-        detail: "We only serve select markets. If you believe your property is within our coverage area, please try a different address or call us.",
+        message: "We currently only purchase properties in Tennessee.",
+        detail: "If your property is located in Tennessee, please try entering the address again, or call us directly.",
       },
     }
     const msg = disqualifyMessages[disqualifyReason] || disqualifyMessages.notOwner
