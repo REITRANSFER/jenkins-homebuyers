@@ -1,6 +1,5 @@
 "use client"
 
-import Image from "next/image"
 import { Star } from "lucide-react"
 import { openQuiz } from "./openQuiz"
 
@@ -85,17 +84,11 @@ export default function Reviews() {
               </p>
               <div className="flex items-center gap-3 mt-1">
                 <div
-                  className="relative h-12 w-12 rounded-full overflow-hidden shrink-0"
-                  style={{ border: "2px solid var(--hpg-gold)" }}
+                  className="relative h-12 w-12 rounded-full shrink-0 flex items-center justify-center font-display font-black text-white text-lg"
+                  style={{ border: "2px solid var(--hpg-gold)", backgroundColor: "var(--hpg-green-dark)" }}
+                  aria-hidden
                 >
-                  <Image
-                    src={r.avatar}
-                    alt={r.name}
-                    fill
-                    sizes="48px"
-                    className="object-cover"
-                    unoptimized
-                  />
+                  {r.name.replace(/^TODO\s+/, "").split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()}
                 </div>
                 <div>
                   <p
