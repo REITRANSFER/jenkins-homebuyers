@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { MapPin } from "lucide-react"
+import { isAddressInServiceArea } from "@/lib/service-zips"
 
 export interface AddressDetails {
   formattedAddress: string
@@ -11,6 +12,7 @@ export interface AddressDetails {
   state?: string
   city?: string
   county?: string
+  zip?: string
 }
 
 export interface ServiceArea {
@@ -116,6 +118,7 @@ export function AddressAutocomplete({
       let state = ""
       let city = ""
       let county = ""
+      let zip = ""
       let lat: number | undefined
       let lng: number | undefined
 
@@ -123,6 +126,7 @@ export function AddressAutocomplete({
         if (component.types.includes("administrative_area_level_1")) state = component.short_name
         if (component.types.includes("locality")) city = component.long_name
         if (component.types.includes("administrative_area_level_2")) county = component.long_name
+        if (component.types.includes("postal_code")) zip = component.long_name
       })
 
       if (place.geometry?.location) {
@@ -130,9 +134,17 @@ export function AddressAutocomplete({
         lng = place.geometry.location.lng()
       }
 
-      const details: AddressDetails = { formattedAddress: place.formatted_address, lat, lng, state, city, county }
+      const details: AddressDetails = { formattedAddress: place.formatted_address, lat, lng, state, city, county, zip }
 
-      // Service area validation
+      // ZIP service-area gate (Middle Tennessee). Primary area filter: only the
+      // targeted ZIPs may proceed; falls back to county only if Google returns no ZIP.
+      if (!isAddressInServiceArea(zip, county)) {
+        onChange(place.formatted_address)
+        onOutOfArea?.(place.formatted_address)
+        return
+      }
+
+      // Optional radius validation (only if serviceAreas configured via env).
       if (serviceAreas.length > 0 && lat !== undefined && lng !== undefined) {
         if (!isInServiceArea(lat, lng, serviceAreas)) {
           onChange(place.formatted_address)
