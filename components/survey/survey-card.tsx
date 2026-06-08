@@ -702,7 +702,7 @@ export function SurveyCard({
                     className="mt-1 h-5 w-5 rounded border-2 border-gray-300 text-[var(--accent)] focus:ring-[var(--accent)]/30"
                   />
                   <span className="text-sm text-gray-600 leading-snug">
-                    By checking this box, I consent to receive calls and text messages (including autodialed) from {companyName} at the phone number provided. Consent is not a condition of any service. Standard message and data rates may apply. Reply STOP to opt out.
+                    By submitting, you agree to receive calls, texts, emails, and voicemails from {companyName}, including automated or prerecorded messages. Consent is not required. Msg/data rates may apply. Reply STOP to opt out or HELP for help.
                   </span>
                 </label>
                 {validationErrors.tcpaConsent && <p className="-mt-2 text-sm text-red-500">{validationErrors.tcpaConsent}</p>}
