@@ -38,6 +38,11 @@ export interface VideoEntry {
 export const VIDEOS: VideoEntry[] = [
   // 1 — Foreclosure & Financial Hardship
   {
+    title: "Facing Foreclosure: Unlock Equity Before It's Too Late!",
+    category: "Foreclosure & Financial Hardship",
+    file: "new-thank-you/1.1Facing Foreclosure_ Unlock Equity Before It's Too Late!.mp4",
+  },
+  {
     title: "Mortgage Behind: Unlock Equity & Options Now!",
     category: "Foreclosure & Financial Hardship",
     file: "new-thank-you/1.2 Mortgage Behind_ Unlock Equity & Options Now! (1).mp4",
