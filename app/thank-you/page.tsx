@@ -1,6 +1,7 @@
 import Image from "next/image"
 import { CheckCircle2, Phone } from "lucide-react"
 import config from "@/lib/config"
+import { VideoGallery } from "@/components/thank-you/video-gallery"
 export default function ThankYouPage() {
   return (
     <main className="min-h-screen bg-gray-50">
@@ -121,11 +122,25 @@ export default function ThankYouPage() {
             <Phone className="h-5 w-5" />
             {config.phoneDisplay}
           </a>
-          <p className="mt-10 text-sm text-gray-400">
-            &copy; {new Date().getFullYear()} {config.companyName}. All rights reserved.
-          </p>
         </div>
       </div>
+
+      {/* Helpful videos — grouped by situation, served from Vercel Blob */}
+      <section className="mx-auto max-w-7xl px-4 pb-12">
+        <div className="mb-6 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 md:text-3xl text-balance">
+            While You Wait, Watch &amp; Learn
+          </h2>
+          <p className="mx-auto mt-2 max-w-2xl text-gray-600">
+            Short videos answering the most common questions homeowners ask us &mdash; grouped by situation.
+          </p>
+        </div>
+        <VideoGallery accentColor={config.accentColor} />
+      </section>
+
+      <p className="pb-10 text-center text-sm text-gray-400">
+        &copy; {new Date().getFullYear()} {config.companyName}. All rights reserved.
+      </p>
     </main>
   )
 }

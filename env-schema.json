@@ -170,6 +170,14 @@
     "description": "Vidalytics embed ID. Optional -- set post-deploy if client uses video."
   },
   {
+    "name": "NEXT_PUBLIC_BLOB_BASE_URL",
+    "type": "string",
+    "required": false,
+    "scope": "public",
+    "default": "",
+    "description": "Public base URL of the client's Vercel Blob store (no trailing slash), e.g. https://<storeid>.public.blob.vercel-storage.com. Used by the /thank-you video gallery to build video URLs from the static manifest in lib/thank-you-videos.ts. Optional -- only needed if the client has thank-you videos."
+  },
+  {
     "name": "SERVICE_AREAS",
     "type": "json",
     "required": false,
