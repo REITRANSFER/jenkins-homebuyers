@@ -6,19 +6,6 @@ export default function ThankYouPage() {
   return (
     <main className="min-h-screen bg-gray-50">
 
-      {/* Helpful videos — grouped by situation, served from Vercel Blob */}
-      <section className="mx-auto max-w-7xl px-4 pb-12">
-        <div className="mb-6 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 md:text-3xl text-balance">
-            While You Wait, Watch &amp; Learn
-          </h2>
-          <p className="mx-auto mt-2 max-w-2xl text-gray-600">
-            Short videos answering the most common questions homeowners ask us &mdash; grouped by situation.
-          </p>
-        </div>
-        <VideoGallery accentColor={config.accentColor} />
-      </section>
-
       <div className="mx-auto max-w-2xl px-4 py-12 md:py-20">
         {/* Confirmation icon */}
         <div className="flex justify-center mb-6">
@@ -40,7 +27,22 @@ export default function ThankYouPage() {
             <strong>24 hours</strong> with your cash offer. In the meantime, here are answers to common questions.
           </p>
         </div>
+      </div>
 
+      {/* Helpful videos — grouped by situation, served from Vercel Blob */}
+      <section className="mx-auto max-w-7xl px-4 pb-12">
+        <div className="mb-6 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 md:text-3xl text-balance">
+            While You Wait, Watch &amp; Learn
+          </h2>
+          <p className="mx-auto mt-2 max-w-2xl text-gray-600">
+            Short videos answering the most common questions homeowners ask us &mdash; grouped by situation.
+          </p>
+        </div>
+        <VideoGallery accentColor={config.accentColor} />
+      </section>
+
+      <div className="mx-auto max-w-2xl px-4 py-12 md:py-20">
         {/* Personal note card */}
         <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 md:p-8 mb-6">
           <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mb-2">
