@@ -218,6 +218,7 @@ export function SurveyCard({
   // Address selection auto-advances to owner question
   const handleAddressSelect = (address: string, details: AddressDetails) => {
     const state = details.state || ""
+    const zip = details.zip || ""
     setStage1Data({
       ...stage1Data,
       address,
@@ -227,8 +228,12 @@ export function SurveyCard({
     })
     setAddressVerified(true)
 
-    // DQ any property outside Tennessee — state holds the short_name ("TN")
-    if (state !== "TN" && state.toLowerCase() !== "tennessee") {
+    // DQ any property outside Tennessee — state holds the short_name ("TN").
+    // Exception: Clarksville / Fort Campbell border ZIPs are in the Jenkins
+    // Meta target list but Google returns a Kentucky state for them, so let
+    // them through instead of DQ'ing a real in-market homeowner.
+    const BORDER_ZIPS = new Set(["42223", "42254"])
+    if (state !== "TN" && state.toLowerCase() !== "tennessee" && !BORDER_ZIPS.has(zip)) {
       setAddressOutOfArea(true)
       setTimeout(() => { setDisqualifyReason("outOfArea"); setIsDisqualified(true) }, 300)
       return
