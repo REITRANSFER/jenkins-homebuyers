@@ -11,6 +11,7 @@ export interface AddressDetails {
   state?: string
   city?: string
   county?: string
+  zip?: string
 }
 
 export interface ServiceArea {
@@ -116,6 +117,7 @@ export function AddressAutocomplete({
       let state = ""
       let city = ""
       let county = ""
+      let zip = ""
       let lat: number | undefined
       let lng: number | undefined
 
@@ -123,6 +125,7 @@ export function AddressAutocomplete({
         if (component.types.includes("administrative_area_level_1")) state = component.short_name
         if (component.types.includes("locality")) city = component.long_name
         if (component.types.includes("administrative_area_level_2")) county = component.long_name
+        if (component.types.includes("postal_code")) zip = component.short_name
       })
 
       if (place.geometry?.location) {
@@ -130,7 +133,7 @@ export function AddressAutocomplete({
         lng = place.geometry.location.lng()
       }
 
-      const details: AddressDetails = { formattedAddress: place.formatted_address, lat, lng, state, city, county }
+      const details: AddressDetails = { formattedAddress: place.formatted_address, lat, lng, state, city, county, zip }
 
       // Service area validation
       if (serviceAreas.length > 0 && lat !== undefined && lng !== undefined) {
