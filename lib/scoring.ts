@@ -89,6 +89,7 @@ export type LeadQuality = 'premium' | 'standard' | 'low' | 'soft-fail'
 
 export function getLeadQuality(d: Stage2Data): LeadQuality {
   if (!isPropertyTypeAccepted(d.propertyType)) return 'soft-fail'
+  if (d.condition === 'excellent') return 'soft-fail'
   const score = calculateLeadScore(d)
   if (score >= 9) return 'premium'
   if (score >= 6) return 'standard'
