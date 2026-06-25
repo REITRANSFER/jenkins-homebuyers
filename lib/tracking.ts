@@ -10,10 +10,35 @@ interface TrackingData {
   gclid: string
   msclkid: string
   ttclid: string
+  gf_sid: string
   ip: string
   referrer: string
   landing_page: string
   user_agent: string
+}
+
+// Read the GoFunnel session id. The tracking script sets window.__gf_sid
+// synchronously on load; fall through to localStorage / cookie / ?sid= for
+// resilience (mirrors GoFunnel's own capture order).
+function readGfSid(): string {
+  if (typeof window === "undefined") return ""
+  try {
+    const w = window as unknown as { __gf_sid?: string }
+    if (w.__gf_sid) return w.__gf_sid
+  } catch {}
+  try {
+    const ls = localStorage.getItem("gf_sid")
+    if (ls) return ls
+  } catch {}
+  try {
+    const m = document.cookie.match(/(?:^|; )gf_sid=([^;]*)/)
+    if (m) return decodeURIComponent(m[1])
+  } catch {}
+  try {
+    const sid = new URLSearchParams(window.location.search).get("sid")
+    if (sid) return sid
+  } catch {}
+  return ""
 }
 
 export function captureTrackingData(): TrackingData {
@@ -21,7 +46,7 @@ export function captureTrackingData(): TrackingData {
     return {
       utm_source: "", utm_medium: "", utm_campaign: "",
       utm_content: "", utm_term: "", fbclid: "", gclid: "",
-      msclkid: "", ttclid: "", ip: "", referrer: "", landing_page: "", user_agent: "",
+      msclkid: "", ttclid: "", gf_sid: "", ip: "", referrer: "", landing_page: "", user_agent: "",
     }
   }
 
@@ -37,6 +62,7 @@ export function captureTrackingData(): TrackingData {
     gclid: params.get("gclid") || "",
     msclkid: params.get("msclkid") || "",
     ttclid: params.get("ttclid") || "",
+    gf_sid: readGfSid(),
     ip: "",
     referrer: document.referrer || "",
     landing_page: window.location.href,
