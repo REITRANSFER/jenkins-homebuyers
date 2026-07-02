@@ -132,6 +132,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Address required" }, { status: 400 })
     }
 
+    // Blocklist — silent drop: forward to neither n8n nor GoFunnel, tell client "success"
+    const BLOCKLIST = [{ phone: '6157137836', email: '' }] // Ricky Turner
+    if (BLOCKLIST.some(b => (b.phone && b.phone === phone) || (b.email && b.email === email))) {
+      return NextResponse.json({ success: true, stage })
+    }
+
     const payload = { ...data, server_ip: ip, lead_stage: stage }
 
     // Fire the n8n and GoFunnel forwards in parallel so neither delays the
