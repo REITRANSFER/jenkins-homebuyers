@@ -138,6 +138,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, stage })
     }
 
+    // Hard DQ: move-in-ready ("excellent") condition — block + drop before the
+    // n8n / GoFunnel fan-out. Same silent-success shape as the blocklist above.
+    if (stage === 'complete' && data.condition === 'excellent') {
+      return NextResponse.json({ success: true, stage })
+    }
+
     const payload = { ...data, server_ip: ip, lead_stage: stage }
 
     // Fire the n8n and GoFunnel forwards in parallel so neither delays the

@@ -205,7 +205,6 @@ export function SurveyCard({
   const formStartTime = useRef<number>(Date.now())
   const trackingRef = useRef(captureTrackingData())
   const stage1EventIdRef = useRef<string>("")
-  const stage1FiredRef = useRef<boolean>(false)
   useEffect(() => {
     getIPAddress().then((ip) => { trackingRef.current.ip = ip })
   }, [])
@@ -263,7 +262,8 @@ export function SurveyCard({
     setTimeout(() => setStage1Step(4), 350)
   }
 
-  // Contact submit — fires LeadEarly + sends partial webhook + advances to Stage 2
+  // Contact submit — validates contact info, then advances to Stage 2.
+  // No early/partial capture: the ONLY lead submission is the terminal complete one.
   const handleContactSubmit = async () => {
     const errors: Record<string, string> = {}
     const fnCheck = validateName(stage1Data.firstName)
@@ -285,49 +285,6 @@ export function SurveyCard({
     if (Date.now() - formStartTime.current < 3000) { setIsSubmitted(true); return }
     if (honeypot) { setIsSubmitted(true); return }
 
-    setIsSubmitting(true)
-
-    const earlyEventId = makeEventId('lead-early')
-    stage1EventIdRef.current = earlyEventId
-    fireMetaEvent('LeadEarly', {
-      content_name: `${companyName} Stage 1`,
-      content_category: 'partial-lead',
-    }, earlyEventId)
-    stage1FiredRef.current = true
-
-    try {
-      const fullName = `${stage1Data.firstName.trim()} ${stage1Data.lastName.trim()}`.trim()
-      const payload = {
-        lead_stage: 'early',
-        firstName: stage1Data.firstName.trim(),
-        lastName: stage1Data.lastName.trim(),
-        name: fullName,
-        email: stage1Data.email.trim().toLowerCase(),
-        phone: stage1Data.phone,
-        address: stage1Data.address,
-        state: stage1Data.state,
-        county: stage1Data.county,
-        city: stage1Data.city,
-        isLegalOwner: stage1Data.isLegalOwner,
-        listedOnMarket: stage1Data.listedOnMarket,
-        tcpa_consent: stage1Data.tcpaConsent,
-        source: `${companyName} - Survey (Stage 1)`,
-        submittedAt: new Date().toISOString(),
-        meta_event_id: earlyEventId,
-        meta_event_name: 'LeadEarly',
-        meta_value: 0,
-        ...trackingRef.current,
-      }
-      await fetch('/api/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-    } catch {
-      // partial fail shouldn't block user
-    }
-
-    setIsSubmitting(false)
     setStage(2)
     setStage2Step(1)
   }
@@ -402,6 +359,11 @@ export function SurveyCard({
   const handleStage2OptionSelect = (field: keyof Stage2State, value: string) => {
     const next = { ...stage2Data, [field]: value }
     setStage2Data(next)
+    // Hard DQ: "excellent" (move-in ready) is a block+drop — no lead is submitted.
+    if (field === "condition" && value === "excellent") {
+      setTimeout(() => { setDisqualifyReason("excellent"); setIsDisqualified(true) }, 300)
+      return
+    }
     setTimeout(() => {
       if (stage2Step < totalStage2Steps) setStage2Step(stage2Step + 1)
       else {
@@ -511,6 +473,11 @@ export function SurveyCard({
         title: "Outside Our Service Area",
         message: "We currently only purchase properties in Tennessee.",
         detail: "If your property is located in Tennessee, please try entering the address again, or call us directly.",
+      },
+      excellent: {
+        title: "This Doesn't Look Like a Fit",
+        message: "We focus on homes that need some work — we're not the best fit for move-in-ready properties.",
+        detail: "If your home needs repairs or updates, or your situation changes, we'd be glad to help. Feel free to call us.",
       },
     }
     const msg = disqualifyMessages[disqualifyReason] || disqualifyMessages.notOwner
