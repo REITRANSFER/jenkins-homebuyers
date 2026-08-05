@@ -111,7 +111,12 @@ export async function POST(request: Request) {
     }
 
     const data = await request.json()
-    const stage = data.lead_stage || 'complete' // 'early' | 'complete'
+    const stage = data.lead_stage || 'complete' // 'early' | 'complete' | 'dq_stage1' | 'dq_stage2'
+    // Outcome marker from the survey: 'qualified' | 'dq_stage1' | 'dq_stage2'.
+    // Hard-DQ captures are sheet-only downstream (n8n routes them to their DQ tab
+    // and fires nothing else), and must NOT be sent to GoFunnel.
+    const outcome = typeof data.outcome === 'string' ? data.outcome : 'qualified'
+    const isDq = outcome.startsWith('dq_')
 
     // Server-side validation (applies to BOTH stages)
     const phone = (data.phone || "").replace(/\D/g, "").replace(/^1/, "")
@@ -138,13 +143,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, stage })
     }
 
-    // Hard DQ: move-in-ready ("excellent") condition — block + drop before the
-    // n8n / GoFunnel fan-out. Same silent-success shape as the blocklist above.
-    if (stage === 'complete' && data.condition === 'excellent') {
-      return NextResponse.json({ success: true, stage })
-    }
+    // NOTE: move-in-ready ("excellent") is no longer silently dropped here — the
+    // survey now captures it as outcome 'dq_stage2', which forwards to n8n (Second
+    // Form DQ tab, sheet-only) below while still being excluded from GoFunnel.
 
-    const payload = { ...data, server_ip: ip, lead_stage: stage }
+    const payload = { ...data, server_ip: ip, lead_stage: stage, outcome }
 
     // Fire the n8n and GoFunnel forwards in parallel so neither delays the
     // client's redirect to /thank-you, and a failure of one never blocks the
@@ -169,7 +172,8 @@ export async function POST(request: Request) {
 
     // GoFunnel external webhook — attribution stitch via gf_sid (payload first,
     // cookie fallback). Set GOFUNNEL_WEBHOOK_SECRET="" to disable.
-    if (GF_CREDENTIAL_ID && GF_BEARER) {
+    // Skip for hard-DQ captures — those are sheet-only and must not hit GoFunnel.
+    if (!isDq && GF_CREDENTIAL_ID && GF_BEARER) {
       const gfSid = (data.gf_sid || readCookie(request, "gf_sid") || "").toString().trim()
       const gfPayload = buildGoFunnelPayload(data, stage, gfSid, email, phone)
       forwards.push(

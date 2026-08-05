@@ -184,7 +184,7 @@ export function SurveyCard({
 }: SurveyCardProps) {
   // ---- Stage state ----
   const [stage, setStage] = useState<1 | 2>(1)
-  const [stage1Step, setStage1Step] = useState(1) // 1=address, 2=owner, 3=listed, 4=contact
+  const [stage1Step, setStage1Step] = useState(1) // 1=address, 2=contact, 3=owner, 4=listed
   const [stage2Step, setStage2Step] = useState(1) // 1..5 within stage 2
   const totalStage2Steps = 5
 
@@ -242,28 +242,78 @@ export function SurveyCard({
     setTimeout(() => setStage1Step(2), 350)
   }
 
-  // Owner selection — DQ on "no", else auto-advance
+  // Sheet-only hard-DQ capture. POSTs to /api/submit with an `outcome` +
+  // `dq_reason` marker so n8n routes it to its DQ tab ONLY. Deliberately fires
+  // NO Meta event, NO GoFunnel, and does NOT redirect to /thank-you — the
+  // hard-DQ block screen still renders. Best-effort (never blocks the UI).
+  const captureDqLead = async (
+    outcome: "dq_stage1" | "dq_stage2",
+    dqReason: string,
+    stage2Override?: Stage2State,
+  ) => {
+    const s2 = stage2Override || stage2Data
+    try {
+      const fullName = `${stage1Data.firstName.trim()} ${stage1Data.lastName.trim()}`.trim()
+      const payload = {
+        outcome,
+        dq_reason: dqReason,
+        lead_stage: outcome,
+        firstName: stage1Data.firstName.trim(),
+        lastName: stage1Data.lastName.trim(),
+        name: fullName,
+        email: stage1Data.email.trim().toLowerCase(),
+        phone: stage1Data.phone,
+        address: stage1Data.address,
+        state: stage1Data.state,
+        county: stage1Data.county,
+        city: stage1Data.city,
+        isLegalOwner: stage1Data.isLegalOwner,
+        listedOnMarket: stage1Data.listedOnMarket,
+        tcpa_consent: stage1Data.tcpaConsent,
+        propertyType: s2.propertyType,
+        timeline: s2.timeline,
+        askingPrice: s2.askingPrice,
+        condition: s2.condition,
+        reason: s2.reason,
+        source: `${companyName} - Survey (${outcome})`,
+        submittedAt: new Date().toISOString(),
+        ...trackingRef.current,
+      }
+      await fetch("/api/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+    } catch {
+      // best-effort — never block the DQ screen
+    }
+  }
+
+  // Owner selection — DQ on "no" (capture dq_stage1), else advance to listed
   const handleOwnerSelect = (value: string) => {
     setStage1Data({ ...stage1Data, isLegalOwner: value })
     if (value === "no") {
+      captureDqLead("dq_stage1", "Not Legal Owner")
       setTimeout(() => { setDisqualifyReason("notOwner"); setIsDisqualified(true) }, 300)
-      return
-    }
-    setTimeout(() => setStage1Step(3), 350)
-  }
-
-  // Listed selection — DQ on listed, else auto-advance to contact
-  const handleListedSelect = (value: string) => {
-    setStage1Data({ ...stage1Data, listedOnMarket: value })
-    if (value === "listed-realtor" || value === "listed-fsbo") {
-      setTimeout(() => { setDisqualifyReason("listed"); setIsDisqualified(true) }, 300)
       return
     }
     setTimeout(() => setStage1Step(4), 350)
   }
 
-  // Contact submit — validates contact info, then advances to Stage 2.
-  // No early/partial capture: the ONLY lead submission is the terminal complete one.
+  // Listed selection — DQ on listed (capture dq_stage1), else advance to Stage 2
+  const handleListedSelect = (value: string) => {
+    setStage1Data({ ...stage1Data, listedOnMarket: value })
+    if (value === "listed-realtor" || value === "listed-fsbo") {
+      captureDqLead("dq_stage1", value === "listed-fsbo" ? "Listed (FSBO)" : "Listed (Realtor)")
+      setTimeout(() => { setDisqualifyReason("listed"); setIsDisqualified(true) }, 300)
+      return
+    }
+    setTimeout(() => { setStage(2); setStage2Step(1) }, 350)
+  }
+
+  // Contact submit — validates contact info, then advances to the owner/listed
+  // DQ questions. Contact is now collected BEFORE the DQ gates so hard-DQ leads
+  // carry full contact. No lead is submitted here.
   const handleContactSubmit = async () => {
     const errors: Record<string, string> = {}
     const fnCheck = validateName(stage1Data.firstName)
@@ -285,8 +335,7 @@ export function SurveyCard({
     if (Date.now() - formStartTime.current < 3000) { setIsSubmitted(true); return }
     if (honeypot) { setIsSubmitted(true); return }
 
-    setStage(2)
-    setStage2Step(1)
+    setStage1Step(3)
   }
 
   // ============================================================
@@ -313,6 +362,7 @@ export function SurveyCard({
       const fullName = `${stage1Data.firstName.trim()} ${stage1Data.lastName.trim()}`.trim()
       const payload = {
         lead_stage: 'complete',
+        outcome: 'qualified',
         firstName: stage1Data.firstName.trim(),
         lastName: stage1Data.lastName.trim(),
         name: fullName,
@@ -359,8 +409,10 @@ export function SurveyCard({
   const handleStage2OptionSelect = (field: keyof Stage2State, value: string) => {
     const next = { ...stage2Data, [field]: value }
     setStage2Data(next)
-    // Hard DQ: "excellent" (move-in ready) is a block+drop — no lead is submitted.
+    // Hard DQ: "excellent" (move-in ready). Capture sheet-only to Second Form DQ
+    // (n8n dq_stage2) — NO Meta, NO GoFunnel, NO CRM — then show the block screen.
     if (field === "condition" && value === "excellent") {
+      captureDqLead("dq_stage2", "Excellent (move-in ready)", next)
       setTimeout(() => { setDisqualifyReason("excellent"); setIsDisqualified(true) }, 300)
       return
     }
@@ -384,6 +436,7 @@ export function SurveyCard({
             const fullName = `${stage1Data.firstName.trim()} ${stage1Data.lastName.trim()}`.trim()
             const payload = {
               lead_stage: 'complete',
+              outcome: 'qualified',
               firstName: stage1Data.firstName.trim(),
               lastName: stage1Data.lastName.trim(),
               name: fullName,
@@ -564,8 +617,8 @@ export function SurveyCard({
             </div>
           )}
 
-          {/* Sub-step 2: Legal owner */}
-          {stage1Step === 2 && (
+          {/* Sub-step 3: Legal owner */}
+          {stage1Step === 3 && (
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 leading-tight">Are you the legal homeowner?</h2>
@@ -579,8 +632,8 @@ export function SurveyCard({
             </div>
           )}
 
-          {/* Sub-step 3: Listed on market */}
-          {stage1Step === 3 && (
+          {/* Sub-step 4: Listed on market */}
+          {stage1Step === 4 && (
             <div className="flex flex-col gap-4">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 leading-tight">Is the property currently listed on the market?</h2>
@@ -594,8 +647,8 @@ export function SurveyCard({
             </div>
           )}
 
-          {/* Sub-step 4: Contact info + TCPA + final CTA */}
-          {stage1Step === 4 && (
+          {/* Sub-step 2: Contact info + TCPA + final CTA */}
+          {stage1Step === 2 && (
             <div className="flex flex-col gap-5">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 leading-tight">Where should we send your offer?</h2>
