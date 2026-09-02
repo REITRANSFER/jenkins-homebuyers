@@ -35,6 +35,10 @@ function buildGoFunnelPayload(
     sid: gfSid || undefined,
     formId: "jenkins-homebuyers-survey",
     formTitle: "Jenkins Home Buyers Survey",
+    // Subject property — the house the seller is selling. Read by
+    // GoFunnel's real-estate property enrichment. NOT an identity
+    // field: it never participates in lead matching.
+    propertyAddress: data.address,
     idempotencyKey: str(data.meta_event_id),
     leadQuestions: {
       is_legal_owner: str(data.isLegalOwner),
