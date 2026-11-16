@@ -72,14 +72,6 @@ const PROPERTY_TYPE_OPTIONS = [
   { id: "other", label: "Other" },
 ]
 
-const TIMELINE_OPTIONS = [
-  { id: "asap", label: "ASAP — within 7 days" },
-  { id: "30-days", label: "Within 30 days" },
-  { id: "60-days", label: "Within 60 days" },
-  { id: "90-days", label: "Within 90 days" },
-  { id: "flexible", label: "I'm flexible" },
-]
-
 const CONDITION_OPTIONS = [
   { id: "excellent", label: "Excellent — Move-in ready" },
   { id: "good", label: "Good — Minor cosmetic touch-ups" },
@@ -185,8 +177,8 @@ export function SurveyCard({
   // ---- Stage state ----
   const [stage, setStage] = useState<1 | 2>(1)
   const [stage1Step, setStage1Step] = useState(1) // 1=address, 2=contact, 3=owner, 4=listed
-  const [stage2Step, setStage2Step] = useState(1) // 1..5 within stage 2
-  const totalStage2Steps = 5
+  const [stage2Step, setStage2Step] = useState(1) // 1..4 within stage 2
+  const totalStage2Steps = 4
 
   // ---- Data state ----
   const [stage1Data, setStage1Data] = useState<Stage1State>(INITIAL_STAGE1)
@@ -810,20 +802,6 @@ export function SurveyCard({
         {stage2Step === 1 && (
           <div className="flex flex-col gap-4">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 leading-tight">How fast are you looking to sell?</h2>
-              <p className="mt-2 text-base text-gray-500">Select your ideal timeline.</p>
-            </div>
-            <div className="flex flex-col gap-3">
-              {TIMELINE_OPTIONS.map((option) =>
-                renderOptionButton(option, stage2Data.timeline, () => handleStage2OptionSelect("timeline", option.id))
-              )}
-            </div>
-          </div>
-        )}
-
-        {stage2Step === 2 && (
-          <div className="flex flex-col gap-4">
-            <div>
               <h2 className="text-3xl font-bold text-gray-900 leading-tight">If we covered all closing costs and bought it as-is, what's the lowest price you'd accept?</h2>
               <p className="mt-2 text-base text-gray-500">No fees, no commissions, nothing out of your pocket.</p>
             </div>
@@ -835,7 +813,7 @@ export function SurveyCard({
           </div>
         )}
 
-        {stage2Step === 3 && (
+        {stage2Step === 2 && (
           <div className="flex flex-col gap-4">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 leading-tight">What type of property is it?</h2>
@@ -849,7 +827,7 @@ export function SurveyCard({
           </div>
         )}
 
-        {stage2Step === 4 && (
+        {stage2Step === 3 && (
           <div className="flex flex-col gap-4">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 leading-tight">What condition is the property in?</h2>
@@ -863,7 +841,7 @@ export function SurveyCard({
           </div>
         )}
 
-        {stage2Step === 5 && (
+        {stage2Step === 4 && (
           <div className="flex flex-col gap-4">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 leading-tight">What's your reason for selling?</h2>
