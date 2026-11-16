@@ -42,6 +42,8 @@ const SCORE_TIMELINE: Record<string, number> = {
   '90-days': 2,
   'flexible': 1,
 }
+// Timeline question removed from the form: an empty timeline scores as '30-days'.
+const TIMELINE_NEUTRAL = 4
 
 const SCORE_ASKING_PRICE: Record<string, number> = {
   'under-150k': 3,
@@ -78,7 +80,7 @@ export function isPropertyTypeAccepted(propertyType: string): boolean {
 
 // --- Score calculator (0–14) ---
 export function calculateLeadScore(d: Stage2Data): number {
-  return (SCORE_TIMELINE[d.timeline] || 0)
+  return (d.timeline ? (SCORE_TIMELINE[d.timeline] || 0) : TIMELINE_NEUTRAL)
        + (SCORE_ASKING_PRICE[d.askingPrice] || 0)
        + (SCORE_CONDITION[d.condition] || 0)
        + (SCORE_REASON[d.reason] || 0)
